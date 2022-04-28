@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+{% load static%}
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django Ajax Crud</title>
+    <link rel="stylesheet" href="{% static 'Crud/css/bootstrap.css'%}">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center alert alert-danger">
+            Django Function Base View Ajax CRUD Project
+        </h2>
+        <div class="row">
+            <div class="col-lg-4 col-md-4 col-sm-12">
+                <h4 class="text-center alert alert-info">Add/Update Student</h4>
+                <form action="" class="form" id="form">
+                    {% csrf_token %}
+                    <input type="hidden" name="stuid" id="stuid" />
+                    <div class="form-group">
+                        <label for="">Name</label>
+                        <input type="text" name="name" id="name" class="form-control" placeholder="Enter Your Fullname">
+                    </div>
+                    <div class="form-group">
+                        <label for="">Email</label>
+                        <input type="email" name="email" id="email" class="form-control" placeholder="Enter Your Email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="">Password</label>
+                        <input type="password" name="password" id="password" class="form-control"
+                            placeholder="Enter Your Password">
+                    </div>
+                    <input type="button" value="Save" class="btn btn-primary" id="btnsave" name="">
+                </form>
+                <div class="alert alert-danger" id="msg" style="display: none;"></div>
+            </div>
+            <div class="col-lg-8 col-md-8 col-sm-12">
+                <h4 class="text-center alert alert-info">
+                    Show Student Information
+                </h4>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-10%">ID</th>
+                            <th class="col-15%">Name</th>
+                            <th class="col-30% ">Email</th>
+                            <th class="col-15%">Password</th>
+                            <th class="col-30%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id='tbody'>
+                        {% for std in students%}
+                        <tr>
+                            <td>{{std.id}}</td>
+                            <td>{{std.name}}</td>
+                            <td>{{std.email}}</td>
+                            <td>{{std.password}}</td>
+                            <td>
+                                <input type="button" data-sid="{{std.id}}" class="btn btn-warning btn-sm btn-edit" value='Edit'>
+                                <input type="button" data-sid="{{std.id}}" class="btn btn-danger btn-sm btn-del" value='Delete'>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    
+
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="{% static 'Crud/js/jquery.js' %}"></script>
+    <script src="{% static 'Crud/js/popper.js' %}"></script>
+    <script src="{% static 'Crud/js/bootstrap.js' %}"></script>
+    <script>
+        // Insert Data Code 
+        $("#btnsave").click(function () {
+            // console.log("Sandip mohapatra");
+            output = "";
+            let sid = $('#stuid').val();
+            let nm = $('#name').val();
+            let em = $('#email').val();
+            let pw = $('#password').val();
+            let csr = $('input[name=csrfmiddlewaretoken]').val();
+            // console.log(csr)
+            if (nm == "") {
+                console.log('Please Enter Name');
+            }
+            else if (em == "") {
+                console.log('Please Enter Email');
+            }
+            else if (pw == "") {
+                console.log('Please Enter Password');
+            }
+            else {
+                // console.log(nm)
+                mydata = {stuid:sid, name: nm, email: em, password: pw, csrfmiddlewaretoken: csr, };
+                $.ajax({
+                    url: "{% url 'save' %}",
+                    method: "POST",
+                    data: mydata,
+                    success: function (data) {
+                        x = data.student_data
+                        // console.log(data);
+                        if (data.status == "Save") {
+                            console.log("Form Submitted Successfully");
+                            console.log(x);
+                            $("#msg").text("Form Submitted Successfully");
+                            $("#msg").show();
+                            for (i = 0; i < x.length; i++) {
+                                output += "<tr><td>" + x[i].id + "</td><td>" + x[i].name + "</td><td>" + x[i].email + "</td><td>" + x[i].password + "</td><td><input type='button' class='btn btn-warning btn-sm btn-edit' value='Edit' data-sid=" + x[i].id
+                                    + "><input type='button' class='btn btn-danger btn-sm btn-del m-2' value='Delete' data-sid=" + x[i].id
+                                    + "></td></tr>";
+                            }
+                            $("#tbody").html(output);
+                            $("#stuid").val("");
+                            $("form")[0].reset();
+                        }
+                        if (data.status == 0) {
+                            console.log('Unable to save Data');
+                            $("#msg").text('Unable to save Data');
+                            $("#msg").show();
+                            $("#stuid").val("");
+                            $("form")[0].reset();
+                        }
+                    },
+                });
+            }
+
+        });
+
+// Delete Data Code
+$("tbody").on("click", ".btn-del", function(){
+    console.log("Delete button click");
+    let id = $(this).attr("data-sid");
+    let csr = $('input[name=csrfmiddlewaretoken]').val();
+    console.log(id);
+    mydata = {sid:id, csrfmiddlewaretoken:csr};
+    mythis = this;
+    $.ajax({
+        url:"{% url 'delete' %}",
+        method: "POST",
+        data: mydata,
+        success: function(data){
+            // console.log(data);
+            if(data.status == 1){
+                console.log("Data Deleted Successfully")
+                $("#msg").text('Data Deleted Successfully');
+                $("#msg").show();
+                $(mythis).closest('tr').fadeOut();
+               
+            }
+            if(data.status == 0){
+                console.log("Enable to  Deleted Data")
+                $("#msg").text('Enable to  Deleted Data');
+                $("#msg").show();
+                
+            }
+        },
+      
+    });
+
+});
+
+
+// Edit Data Code
+$("tbody").on("click", ".btn-edit", function(){
+    console.log("Edit button click");
+    let id = $(this).attr("data-sid");
+    let csr = $('input[name=csrfmiddlewaretoken]').val();
+    // console.log(id);
+    mydata = {sid:id, csrfmiddlewaretoken:csr};
+    
+    $.ajax({
+        url:"{% url 'edit' %}",
+        method: "POST",
+        data: mydata,
+        success: function(data){
+            console.log(data);
+            $("#stuid").val(data.id);
+            $("#name").val(data.name);
+            $("#email").val(data.email);
+            $("#password").val(data.password);
+           
+            
+        },
+      
+    });
+
+});
+
+
+
+    </script>
+</body>
+
+</html>
